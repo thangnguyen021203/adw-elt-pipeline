@@ -5,8 +5,8 @@ import pyarrow.parquet as pq
 import pyarrow as pa
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
+from pandas.api.types import is_datetime64_any_dtype
 import snowflake.connector
-
 
 load_dotenv()
 # --- Config ---
@@ -30,6 +30,7 @@ snowflake_config = {
     "schema": os.getenv("SNOWFLAKE_SCHEMA"),
     "role": os.getenv("SNOWFLAKE_ROLE"),
 }
+
 output_dir = "./parquet_files"
 os.makedirs(output_dir, exist_ok=True)
 
@@ -50,12 +51,10 @@ cursor.execute("""
 """)
 tables = cursor.fetchall()
 
-# # Print table names
+# Print table names
 for schema, table in tables:
     print(f"Schema: {schema}, Table: {table}")
-# Uncomment to see all tables
 
-# --- Step 3: Process each table ---
 def mssql_to_sf_type(mssql_type):
     mapping = {
         'int': 'NUMBER',
@@ -69,9 +68,9 @@ def mssql_to_sf_type(mssql_type):
         'nchar': 'VARCHAR',
         'text': 'VARCHAR',
         'ntext': 'VARCHAR',
-        'datetime': 'TIMESTAMP_NTZ',
-        'datetime2': 'TIMESTAMP_NTZ',
-        'smalldatetime': 'TIMESTAMP_NTZ',
+        'datetime': 'TIMESTAMP_NTZ(3)',
+        'datetime2': 'TIMESTAMP_NTZ(3)',
+        'smalldatetime': 'TIMESTAMP_NTZ(3)',
         'date': 'DATE',
         'time': 'TIME',
         'float': 'FLOAT',
@@ -95,12 +94,50 @@ def mssql_to_sf_type(mssql_type):
 def wrap_column_expr(col, dtype):
     dtype = dtype.lower()
     if dtype in ['image', 'varbinary', 'binary']:
-        # Convert binary to hex string
         return f"CONVERT(VARCHAR(MAX), [{col}], 1) AS [{col}]"
     elif dtype in ['xml', 'sql_variant', 'hierarchyid', 'geometry', 'geography', 'text', 'ntext']:
         return f"CAST([{col}] AS NVARCHAR(MAX)) AS [{col}]"
     else:
         return f"[{col}]"
+
+def create_arrow_schema(df: pd.DataFrame) -> pa.Schema:
+    arrow_fields = []
+    for col in df.columns:
+        if is_datetime64_any_dtype(df[col]):
+            arrow_fields.append(pa.field(col, pa.timestamp('ms')))
+        else:
+            col_series = df[col].dropna()
+            if not col_series.empty:
+                col_type = pa.array(col_series).type
+            else:
+                col_type = pa.string()
+            arrow_fields.append(pa.field(col, col_type))
+    return pa.schema(arrow_fields)
+def force_arrow_table(df: pd.DataFrame) -> pa.Table:
+    arrays = []
+    fields = []
+
+    for col in df.columns:
+        series = df[col]
+
+        if is_datetime64_any_dtype(series):
+            series = pd.to_datetime(series, errors='coerce').dt.floor('ms')
+            array = pa.array(series, type=pa.timestamp('ms'))
+            fields.append(pa.field(col, pa.timestamp('ms')))
+        else:
+            # ❗ Không dropna để giữ đúng chiều dài
+            try:
+                array = pa.array(series)  # Let PyArrow infer type safely
+                fields.append(pa.field(col, array.type))
+            except pa.ArrowInvalid:
+                # fallback nếu toàn NULL hoặc unsupported
+                array = pa.array(series, type=pa.string())
+                fields.append(pa.field(col, array.type))
+
+        arrays.append(array)
+
+    schema = pa.schema(fields)
+    return pa.Table.from_arrays(arrays, schema=schema)
 
 
 sf_ddl_statements = []
@@ -108,14 +145,12 @@ sf_ddl_statements = []
 for schema, table in tables:
     print(f"🔄 Processing {schema}.{table}")
 
-    # Get column metadata
     df_cols = pd.read_sql_query(f"""
-        SELECT COLUMN_NAME, DATA_TYPE 
-        FROM INFORMATION_SCHEMA.COLUMNS 
+        SELECT COLUMN_NAME, DATA_TYPE
+        FROM INFORMATION_SCHEMA.COLUMNS
         WHERE TABLE_SCHEMA = '{schema}' AND TABLE_NAME = '{table}'
     """, mssql_conn)
 
-    # Build Snowflake DDL
     column_defs = ",\n  ".join([
         f'"{row.COLUMN_NAME}" {mssql_to_sf_type(row.DATA_TYPE)}'
         for _, row in df_cols.iterrows()
@@ -123,26 +158,25 @@ for schema, table in tables:
     ddl = f'CREATE OR REPLACE TABLE {snowflake_config["schema"]}."STG_ADW_{table}" (\n  {column_defs}\n);'
     sf_ddl_statements.append(ddl)
 
-    # Build SELECT query with type casting if needed
-    unsupported_types = [
-        'xml', 'sql_variant', 'hierarchyid', 'geometry', 'geography',
-        'variant', 'image', 'text', 'ntext', 'binary', 'varbinary'
-    ]
     col_exprs = [wrap_column_expr(row['COLUMN_NAME'], row['DATA_TYPE']) for _, row in df_cols.iterrows()]
-
     select_sql = f"SELECT {', '.join(col_exprs)} FROM [{schema}].[{table}]"
-
-    # Export to Parquet
     df_data = pd.read_sql_query(select_sql, mssql_conn)
-    if df_data.columns.duplicated().any():
-        dup_cols = df_data.columns[df_data.columns.duplicated()].tolist()
-        print(f"⚠️ Duplicate column names in {schema}.{table}: {dup_cols}")
+
+    datetime_types = ['datetime', 'datetime2', 'smalldatetime']
+    datetime_columns = df_cols[df_cols['DATA_TYPE'].str.lower().isin(datetime_types)]['COLUMN_NAME'].tolist()
+    # for col in datetime_columns:
+    #     if col in df_data.columns:
+    #         df_data[col] = pd.to_datetime(df_data[col], errors='coerce')
+    #         df_data[col] = df_data[col].dt.floor('ms')  # đảm bảo không có nano
+    #         df_data[col] = df_data[col].astype('datetime64[ms]')
+
 
     table_path = os.path.join(output_dir, f"{schema}_{table}.parquet")
-    table_arrow = pa.Table.from_pandas(df_data)
-    pq.write_table(table_arrow, table_path)
+    arrow_schema = create_arrow_schema(df_data)
+    table_arrow = pa.Table.from_pandas(df_data, preserve_index=False, schema=arrow_schema)
+    # table_arrow = force_arrow_table(df_data)
+    pq.write_table(table_arrow, table_path, coerce_timestamps="ms", use_deprecated_int96_timestamps=False)
 
-# --- Step 4: Upload to Snowflake ---
 try:
     sf_conn = snowflake.connector.connect(**snowflake_config)
     sf_cursor = sf_conn.cursor()
@@ -156,18 +190,23 @@ for ddl in sf_ddl_statements:
     sf_cursor.execute(ddl)
 
 stage_name = f"@{snowflake_config['database']}.{snowflake_config['schema']}.staging_stage"
-
+sf_cursor.execute("ALTER SESSION SET TIMESTAMP_INPUT_FORMAT = 'AUTO'")
 for schema, table in tables:
     parquet_file = f"{schema}_{table}.parquet"
     local_path = os.path.abspath(os.path.join(output_dir, parquet_file))
-
     full_table_name = f'{snowflake_config["database"]}.{snowflake_config["schema"]}."STG_ADW_{table}"'
 
-    put_cmd = f"PUT file://{local_path} {stage_name}/ AUTO_COMPRESS=TRUE;"
+    put_cmd = f"""
+        PUT file://{local_path}
+        {stage_name}/
+        AUTO_COMPRESS=TRUE
+        OVERWRITE=TRUE;
+    """
+
     copy_cmd = f"""
         COPY INTO {full_table_name}
-        FROM {stage_name}/{parquet_file}.gz
-        FILE_FORMAT = (TYPE = PARQUET)
+        FROM {stage_name}/{parquet_file}
+        FILE_FORMAT = (FORMAT_NAME = 'staging_parquet_format')  -- ✅ Use logical type
         MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
     """
 
@@ -185,8 +224,6 @@ for schema, table in tables:
         print(f"❌ COPY failed for {full_table_name}: {e}")
 
 
-
-# Cleanup
 cursor.close()
 mssql_conn.close()
 sf_cursor.close()
