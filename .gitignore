@@ -1,0 +1,7 @@
+parquet_files
+*.parquet
+*.csv
+
+*.bak
+*.log
+*.tmp
