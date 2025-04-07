@@ -1,0 +1,12 @@
+version: 2
+
+sources:
+  - name: warehouse
+    database: dbt_db
+    schema: warehouse
+    quoting:
+      # database: true
+      # schema: true
+      identifier: true
+    tables:
+    - name: dim_date
