@@ -7,7 +7,7 @@ WITH raw_customers AS (
         p.first_name,
         p.last_name,
         ea.email_address,
-        TRY_CAST(PARSE_XML(p.demographics) AS OBJECT) AS survey_xml
+        PARSE_XML(p.demographics) AS survey_xml
     FROM {{ ref('stg_person') }} p
     LEFT JOIN {{ ref('stg_email_address') }} ea
         ON p.business_entity_id = ea.business_entity_id
@@ -20,19 +20,20 @@ customer_demographics AS (
         first_name,
         last_name,
         email_address,
-        survey_xml:Gender::VARCHAR                     AS gender,
-        TRY_TO_DATE(survey_xml:BirthDate::STRING) AS birth_date,
-        survey_xml:MaritalStatus::VARCHAR              AS marital_status,
-        survey_xml:YearlyIncome::VARCHAR               AS yearly_income,
-        survey_xml:Education::VARCHAR                  AS education_level,
-        survey_xml:HomeOwnerFlag::INT                  AS home_owner_flag,
-        survey_xml:CommuteDistance::VARCHAR            AS commute_distance,
-        survey_xml:NumberChildrenAtHome::INT           AS number_children,
-        survey_xml:TotalChildren::INT                  AS total_children,
-        survey_xml:NumberCarsOwned::INT                AS number_cars_owned,
-        survey_xml:TotalPurchaseYTD::FLOAT             AS total_purchase_ytd,
-        survey_xml:DateFirstPurchase::DATE             AS first_purchase_date,
-        survey_xml:Occupation::VARCHAR                 AS occupation
+        GET(XMLGET(survey_xml, 'Gender'), '$')::STRING                     AS gender,
+        TRY_TO_DATE(GET(XMLGET(survey_xml, 'BirthDate'), '$')::STRING)    AS birth_date,
+        GET(XMLGET(survey_xml, 'MaritalStatus'), '$')::STRING             AS marital_status,
+        GET(XMLGET(survey_xml, 'YearlyIncome'), '$')::STRING              AS yearly_income,
+        GET(XMLGET(survey_xml, 'Education'), '$')::STRING                 AS education_level,
+        GET(XMLGET(survey_xml, 'HomeOwnerFlag'), '$')::STRING::INT        AS home_owner_flag,
+        GET(XMLGET(survey_xml, 'CommuteDistance'), '$')::STRING           AS commute_distance,
+        GET(XMLGET(survey_xml, 'NumberChildrenAtHome'), '$')::STRING::INT AS number_children,
+        GET(XMLGET(survey_xml, 'TotalChildren'), '$')::STRING::INT        AS total_children,
+        GET(XMLGET(survey_xml, 'NumberCarsOwned'), '$')::STRING::INT      AS number_cars_owned,
+        GET(XMLGET(survey_xml, 'TotalPurchaseYTD'), '$')::STRING::FLOAT   AS total_purchase_ytd,
+        TRY_TO_DATE(GET(XMLGET(survey_xml, 'DateFirstPurchase'), '$')::STRING) AS first_purchase_date,
+        GET(XMLGET(survey_xml, 'Occupation'), '$')::STRING                AS occupation
+
     FROM raw_customers
 ),
 

@@ -5,11 +5,9 @@ WITH store_raw AS (
         business_entity_id AS store_id,
         name AS store_name,
         salesperson_id,
-        -- Parse XML thành VARIANT (không dùng OBJECT!)
-        TRY_CAST(PARSE_XML(demographics) AS OBJECT) AS survey_xml
+        PARSE_XML(demographics) AS survey_xml
     FROM {{ ref('stg_store') }}
 ),
-
 
 salesperson_info AS (
     SELECT
@@ -53,20 +51,21 @@ store_demographics AS (
         state_province_id,
         salesperson_id,
 
-        TRY_TO_NUMBER(survey_xml:"AnnualSales"::VARCHAR) AS annual_sales,
-        TRY_TO_NUMBER(survey_xml:"AnnualRevenue"::VARCHAR) AS annual_revenue,
-        TRY_TO_NUMBER(survey_xml:"SquareFeet"::VARCHAR) AS square_feet,
-        TRY_TO_NUMBER(survey_xml:"Brands"::VARCHAR) AS brands,
-        TRY_TO_NUMBER(survey_xml:"NumberEmployees"::VARCHAR) AS number_employees,
+        GET(XMLGET(survey_xml, 'AnnualSales'), '$')::STRING::NUMBER       AS annual_sales,
+        GET(XMLGET(survey_xml, 'AnnualRevenue'), '$')::STRING::NUMBER     AS annual_revenue,
+        GET(XMLGET(survey_xml, 'SquareFeet'), '$')::STRING::NUMBER        AS square_feet,
+        GET(XMLGET(survey_xml, 'Brands'), '$')::STRING                    AS brands,
+        GET(XMLGET(survey_xml, 'NumberEmployees'), '$')::STRING::NUMBER   AS number_employees,
 
-        survey_xml:"Internet"::VARCHAR AS internet,
-        survey_xml:"BankName"::VARCHAR AS bank_name,
-        survey_xml:"BusinessType"::VARCHAR AS business_type,
-        survey_xml:"YearOpened"::VARCHAR AS year_opened_str,
-        survey_xml:"Specialty"::VARCHAR AS specialty
+        XMLGET(XMLGET(survey_xml, 'Internet'), '$')::STRING                  AS internet,
+        GET(XMLGET(survey_xml, 'BankName'), '$')::STRING                  AS bank_name,
+        GET(XMLGET(survey_xml, 'BusinessType'), '$')::STRING              AS business_type,
+        GET(XMLGET(survey_xml, 'YearOpened'), '$')::STRING::NUMBER        AS year_opened,
+        GET(XMLGET(survey_xml, 'Specialty'), '$')::STRING                 AS specialty
 
     FROM store_raw_with_state
 ),
+
 
 
 
@@ -99,7 +98,7 @@ store_final AS (
         annual_revenue,
         bank_name,
         specialty,
-        year_opened_str,
+        year_opened,
         state_province_id
     FROM store_with_territory
 )
