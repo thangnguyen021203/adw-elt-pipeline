@@ -68,9 +68,9 @@ def mssql_to_sf_type(mssql_type):
         'nchar': 'VARCHAR',
         'text': 'VARCHAR',
         'ntext': 'VARCHAR',
-        'datetime': 'TIMESTAMP_NTZ(3)',
-        'datetime2': 'TIMESTAMP_NTZ(3)',
-        'smalldatetime': 'TIMESTAMP_NTZ(3)',
+        'datetime': 'TIMESTAMP_NTZ(0)',
+        'datetime2': 'TIMESTAMP_NTZ(0)',
+        'smalldatetime': 'TIMESTAMP_NTZ(0)',
         'date': 'DATE',
         'time': 'TIME',
         'float': 'FLOAT',
@@ -113,32 +113,6 @@ def create_arrow_schema(df: pd.DataFrame) -> pa.Schema:
                 col_type = pa.string()
             arrow_fields.append(pa.field(col, col_type))
     return pa.schema(arrow_fields)
-def force_arrow_table(df: pd.DataFrame) -> pa.Table:
-    arrays = []
-    fields = []
-
-    for col in df.columns:
-        series = df[col]
-
-        if is_datetime64_any_dtype(series):
-            series = pd.to_datetime(series, errors='coerce').dt.floor('ms')
-            array = pa.array(series, type=pa.timestamp('ms'))
-            fields.append(pa.field(col, pa.timestamp('ms')))
-        else:
-            # ❗ Không dropna để giữ đúng chiều dài
-            try:
-                array = pa.array(series)  # Let PyArrow infer type safely
-                fields.append(pa.field(col, array.type))
-            except pa.ArrowInvalid:
-                # fallback nếu toàn NULL hoặc unsupported
-                array = pa.array(series, type=pa.string())
-                fields.append(pa.field(col, array.type))
-
-        arrays.append(array)
-
-    schema = pa.schema(fields)
-    return pa.Table.from_arrays(arrays, schema=schema)
-
 
 sf_ddl_statements = []
 

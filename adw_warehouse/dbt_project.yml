@@ -1,0 +1,25 @@
+name: 'adw_warehouse'
+version: '1.0.0'
+
+profile: 'adw_warehouse'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  adw_warehouse:           
+    staging:               
+      +materialized: view
+
+
+sources:
+  +quote: true     # ← chỉ quote tên bảng trong source
+

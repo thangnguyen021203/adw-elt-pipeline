@@ -1,0 +1,83 @@
+version: 2
+
+sources:
+  - name: staging
+    database: dbt_db
+    schema: staging
+    quoting:
+      # database: true
+      # schema: true
+      identifier: true
+    tables:
+    - name: STG_ADW_SalesTaxRate
+    - name: STG_ADW_PersonCreditCard
+    - name: STG_ADW_PersonPhone
+    - name: STG_ADW_SalesTerritory
+    - name: STG_ADW_PhoneNumberType
+    - name: STG_ADW_Product
+    - name: STG_ADW_SalesTerritoryHistory
+    - name: STG_ADW_ScrapReason
+    - name: STG_ADW_Shift
+    - name: STG_ADW_ProductCategory
+    - name: STG_ADW_ShipMethod
+    - name: STG_ADW_ProductCostHistory
+    - name: STG_ADW_ProductDescription
+    - name: STG_ADW_ShoppingCartItem
+    - name: STG_ADW_ProductDocument
+    - name: STG_ADW_DatabaseLog
+    - name: STG_ADW_ProductInventory
+    - name: STG_ADW_SpecialOffer
+    - name: STG_ADW_ErrorLog
+    - name: STG_ADW_ProductListPriceHistory
+    - name: STG_ADW_Address
+    - name: STG_ADW_SpecialOfferProduct
+    - name: STG_ADW_ProductModel
+    - name: STG_ADW_AddressType
+    - name: STG_ADW_StateProvince
+    - name: STG_ADW_ProductModelIllustration
+    - name: STG_ADW_AWBuildVersion
+    - name: STG_ADW_ProductModelProductDescriptionCulture
+    - name: STG_ADW_BillOfMaterials
+    - name: STG_ADW_Store
+    - name: STG_ADW_ProductPhoto
+    - name: STG_ADW_ProductProductPhoto
+    - name: STG_ADW_ProductReview
+    - name: STG_ADW_BusinessEntity
+    - name: STG_ADW_TransactionHistoryArchive
+    - name: STG_ADW_ProductSubcategory
+    - name: STG_ADW_BusinessEntityAddress
+    - name: STG_ADW_ProductVendor
+    - name: STG_ADW_BusinessEntityContact
+    - name: STG_ADW_UnitMeasure
+    - name: STG_ADW_Vendor
+    - name: STG_ADW_ContactType
+    - name: STG_ADW_CountryRegionCurrency
+    - name: STG_ADW_CountryRegion
+    - name: STG_ADW_WorkOrder
+    - name: STG_ADW_PurchaseOrderDetail
+    - name: STG_ADW_CreditCard
+    - name: STG_ADW_Culture
+    - name: STG_ADW_WorkOrderRouting
+    - name: STG_ADW_Currency
+    - name: STG_ADW_sysdiagrams
+    - name: STG_ADW_PurchaseOrderHeader
+    - name: STG_ADW_CurrencyRate
+    - name: STG_ADW_Customer
+    - name: STG_ADW_Department
+    - name: STG_ADW_Document
+    - name: STG_ADW_EmailAddress
+    - name: STG_ADW_Employee
+    - name: STG_ADW_SalesOrderHeader
+    - name: STG_ADW_SalesOrderDetail
+    - name: STG_ADW_EmployeeDepartmentHistory
+    - name: STG_ADW_EmployeePayHistory
+    - name: STG_ADW_SalesOrderHeaderSalesReason
+    - name: STG_ADW_SalesPerson
+    - name: STG_ADW_Illustration
+    - name: STG_ADW_JobCandidate
+    - name: STG_ADW_TransactionHistory
+    - name: STG_ADW_Location
+    - name: STG_ADW_Password
+    - name: STG_ADW_SalesPersonQuotaHistory
+    - name: STG_ADW_Person
+    - name: STG_ADW_SalesReason
