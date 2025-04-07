@@ -24,3 +24,12 @@ WITH MOVE 'AdventureWorks2022' TO '/var/opt/mssql/data/AdventureWorks2022.mdf',
 
 sudo ACCEPT_EULA=Y apt install -y msodbcsql18
 odbcinst -q -d
+
+source /opt/conda/etc/profile.d/conda.sh
+conda activate adw_env
+
+dbt run --models +dim_date
+dbt run --models +dim_product
+dbt run --models +dim_store
+dbt run --models +dim_customer
+dbt run --models +dim_promotion
