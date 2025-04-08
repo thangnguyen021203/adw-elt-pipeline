@@ -20,6 +20,7 @@ customer_demographics AS (
         first_name,
         last_name,
         email_address,
+        
         GET(XMLGET(survey_xml, 'Gender'), '$')::STRING                     AS gender,
         TRY_TO_DATE(GET(XMLGET(survey_xml, 'BirthDate'), '$')::STRING)    AS birth_date,
         GET(XMLGET(survey_xml, 'MaritalStatus'), '$')::STRING             AS marital_status,
@@ -67,7 +68,6 @@ final_customer AS (
         cd.customer_id,
         cd.first_name || ' ' || cd.last_name AS full_name,
         cd.email_address AS email,
-
         -- Gender chuẩn hóa
         CASE 
             WHEN LOWER(cd.gender) IN ('m', 'male') THEN 'Male'
@@ -103,8 +103,8 @@ final_customer AS (
 
         -- Customer type dựa theo store/person
         CASE 
-            WHEN c.store_id IS NOT NULL THEN 'Store'
             WHEN c.person_id IS NOT NULL THEN 'Individual'
+            WHEN c.store_id IS NOT NULL THEN 'Store'
             ELSE 'Unknown'
         END AS customer_type,
 

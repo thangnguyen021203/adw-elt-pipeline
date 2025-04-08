@@ -38,3 +38,4 @@ dbt run --models +sales_territory
 
 dbt run --models +fact_currency_rate
 dbt run --models fact_internet_sales
+dbt run --models fact_store_performance
