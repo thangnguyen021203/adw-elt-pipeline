@@ -33,3 +33,8 @@ dbt run --models +dim_product
 dbt run --models +dim_store
 dbt run --models +dim_customer
 dbt run --models +dim_promotion
+dbt run --models +dim_currency
+dbt run --models +sales_territory
+
+dbt run --models +fact_currency_rate
+dbt run --models fact_internet_sales
