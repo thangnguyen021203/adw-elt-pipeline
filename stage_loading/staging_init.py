@@ -55,7 +55,16 @@ tables = cursor.fetchall()
 for schema, table in tables:
     print(f"Schema: {schema}, Table: {table}")
 
-def mssql_to_sf_type(mssql_type):
+def mssql_to_sf_type(mssql_type, precision=None, scale=None):
+    mssql_type = mssql_type.lower()
+    if mssql_type in ['decimal', 'numeric', 'money', 'smallmoney']:
+        p = int(precision or 18)
+        s = int(scale or 2)
+        return f'NUMBER({p},{s})'
+    elif mssql_type in ['float', 'real']:
+        return 'FLOAT'
+    elif mssql_type in ['int', 'bigint', 'smallint', 'tinyint']:
+        return 'NUMBER'
     mapping = {
         'int': 'NUMBER',
         'bigint': 'NUMBER',
@@ -120,15 +129,16 @@ for schema, table in tables:
     print(f"🔄 Processing {schema}.{table}")
 
     df_cols = pd.read_sql_query(f"""
-        SELECT COLUMN_NAME, DATA_TYPE
+        SELECT COLUMN_NAME, DATA_TYPE, NUMERIC_PRECISION, NUMERIC_SCALE
         FROM INFORMATION_SCHEMA.COLUMNS
         WHERE TABLE_SCHEMA = '{schema}' AND TABLE_NAME = '{table}'
     """, mssql_conn)
 
     column_defs = ",\n  ".join([
-        f'"{row.COLUMN_NAME}" {mssql_to_sf_type(row.DATA_TYPE)}'
+        f'"{row.COLUMN_NAME}" {mssql_to_sf_type(row.DATA_TYPE, row.NUMERIC_PRECISION, row.NUMERIC_SCALE)}'
         for _, row in df_cols.iterrows()
     ])
+
     ddl = f'CREATE OR REPLACE TABLE {snowflake_config["schema"]}."STG_ADW_{table}" (\n  {column_defs}\n);'
     sf_ddl_statements.append(ddl)
 

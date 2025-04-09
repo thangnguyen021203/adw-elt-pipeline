@@ -28,14 +28,16 @@ odbcinst -q -d
 source /opt/conda/etc/profile.d/conda.sh
 conda activate adw_env
 
-dbt run --models +dim_date
-dbt run --models +dim_product
-dbt run --models +dim_store
-dbt run --models +dim_customer
-dbt run --models +dim_promotion
-dbt run --models +dim_currency
-dbt run --models +sales_territory
+dbt run --models dim_date
+dbt run --models dim_product
+dbt run --models dim_store
+dbt run --models dim_customer
+dbt run --models dim_promotion
+dbt run --models dim_currency
+dbt run --models sales_territory
 
-dbt run --models +fact_currency_rate
+dbt run --models fact_currency_rate
 dbt run --models fact_internet_sales
+dbt run --models fact_reseller_sales
 dbt run --models fact_store_performance
+dbt run --models fact_customer_value
