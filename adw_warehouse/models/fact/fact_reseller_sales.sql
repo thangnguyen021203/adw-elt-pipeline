@@ -1,3 +1,5 @@
+{{ config(materialized='table') }}
+
 WITH header AS (
     SELECT
         sales_order_id,

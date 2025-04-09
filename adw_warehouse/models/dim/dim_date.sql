@@ -26,8 +26,6 @@ WITH base AS (
 
     -- Time part
     EXTRACT(HOUR FROM full_datetime)       AS hour,
-    EXTRACT(MINUTE FROM full_datetime)     AS minute,
-    EXTRACT(SECOND FROM full_datetime)     AS second,
     CASE 
       WHEN EXTRACT(HOUR FROM full_datetime) < 12 THEN TRUE 
       ELSE FALSE 
@@ -56,8 +54,6 @@ SELECT
   is_holiday,
   season,
   hour,
-  minute,
-  second,
   is_am,
   time_of_day
 FROM base

@@ -1,8 +1,11 @@
 WITH calendar AS (
-  SELECT SEQ4() AS i
-  FROM TABLE(GENERATOR(ROWCOUNT => 40 * 365 * 24 * 60 * 60))  -- 20 năm * 365 ngày * 24h * 60p * 60s
+  SELECT CAST(SEQ4() AS INT) AS i
+  FROM TABLE(GENERATOR(ROWCOUNT => 40 * 365 * 24))
 )
-
 SELECT
-  DATEADD(SECOND, i, '1990-01-01 00:00:00')::TIMESTAMP_NTZ(0) AS full_datetime
+  TIMESTAMPADD(
+    HOUR,
+    i,
+    CAST('1990-01-01 00:00:00' AS TIMESTAMP_NTZ)
+  ) AS full_datetime
 FROM calendar
