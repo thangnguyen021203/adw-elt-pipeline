@@ -44,7 +44,7 @@ dbt run --models fact_customer_value
 
 # Business Intelligence
 **Dashboard 1: General Analysis**
-![Genaral Analysis](images\1.png "General Analysis")
+![Genaral Analysis](\adw-elt-pipeline\images\1.png "General Analysis")
 
 **Dashboard 2: Personal Customer Analysis**
 ![Personal Customer Analysis](images\2.png "Personal Customer Analysis")
