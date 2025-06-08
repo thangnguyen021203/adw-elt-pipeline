@@ -44,13 +44,13 @@ dbt run --models fact_customer_value
 
 # Business Intelligence
 **Dashboard 1: General Analysis**
-![Genaral Analysis](\adw-elt-pipeline\images\1.png "General Analysis")
+![Genaral Analysis](images/1.png "General Analysis")
 
 **Dashboard 2: Personal Customer Analysis**
-![Personal Customer Analysis](images\2.png "Personal Customer Analysis")
+![Personal Customer Analysis](images/2.png "Personal Customer Analysis")
 
 **Dashboard 3: Business Customer Analysis**
-![Business Customer Analysis](images\3.png "Business Customer Analysis")
+![Business Customer Analysis](images/3.png "Business Customer Analysis")
 
 **Dashboard 4: Customer Segmentation**
-![Customer Segmentation](images\4.png "Customer Segmentation")
+![Customer Segmentation](images/4.png "Customer Segmentation")
